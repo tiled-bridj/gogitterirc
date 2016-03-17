@@ -25,7 +25,7 @@ The [gitter-irc-bot](https://github.com/finnp/gitter-irc-bot) project works grea
         "Channel": "#channel"
     },
     "Gitter": {
-        "Apikey": "0123456789abcdef0123456789abcdef01234567",
+        "Token": "0123456789abcdef0123456789abcdef01234567",
         "Room": "team/room"
     }
 }

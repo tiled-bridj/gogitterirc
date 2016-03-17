@@ -1,10 +1,9 @@
 package main
 
 import (
-	"./go-gitter"
 	"fmt"
-
 	"github.com/jinzhu/configor"
+	"github.com/sromku/go-gitter"
 	"github.com/thoj/go-ircevent"
 )
 
@@ -15,20 +14,13 @@ type Config struct {
 		Channel string `required:"true"`
 	}
 	Gitter struct {
-		Apikey string `required:"true"`
-		Room   string `required:"true"`
+		Token string `required:"true"`
+		Room  string `required:"true"`
 	}
 }
 
-func main() {
-	fmt.Println("Gitter/IRC Sync Bot, written in Go by mrexodia")
-	var conf Config
-	if err := configor.Load(&conf, "config.json"); err != nil {
-		fmt.Printf("Error loading config: %v...\n", err)
-		return
-	}
-
-	api := gitter.New(conf.Gitter.Apikey)
+func goGitterIrc(conf Config) {
+	api := gitter.New(conf.Gitter.Token)
 	api.SetDebug(true, nil)
 	user, err := api.GetUser()
 	if err != nil {
@@ -76,4 +68,19 @@ func main() {
 			fmt.Printf("[Gitter] Connection closed...\n")
 		}
 	}
+}
+
+func gitterTest(conf Config) {
+	api := gitter.New(conf.Gitter.Token)
+	api.SetDebug(true, nil)
+}
+
+func main() {
+	fmt.Println("Gitter/IRC Sync Bot, written in Go by mrexodia")
+	var conf Config
+	if err := configor.Load(&conf, "config.json"); err != nil {
+		fmt.Printf("Error loading config: %v...\n", err)
+		return
+	}
+	goGitterIrc(conf)
 }

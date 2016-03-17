@@ -2,5 +2,6 @@
 path = github.com/mrexodia/gogitterirc
 
 [deps]
-github.com/thoj/go-ircevent = commit:da78ed5
 github.com/jinzhu/configor = commit:f740b0b
+github.com/sromku/go-gitter =
+github.com/thoj/go-ircevent = commit:da78ed5
