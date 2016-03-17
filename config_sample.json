@@ -1,0 +1,10 @@
+{
+    "IRC": {
+        "Nick": "nickname",
+        "Channel": "#channel"
+    },
+    "Gitter": {
+        "Apikey": "0123456789abcdef0123456789abcdef01234567",
+        "Channel": "team/room"
+    }
+}
