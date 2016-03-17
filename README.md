@@ -1,5 +1,7 @@
 # gogitterirc
 
+[![Gitter](https://badges.gitter.im/mrexodia/gogitterirc.svg)](https://gitter.im/mrexodia/gogitterirc?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 This is a simple Gitter/IRC syncronization bot witten in Go for a low memory footprint.
 
 **NOTICE: It is currently in development and not considered stable!**
