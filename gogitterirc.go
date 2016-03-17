@@ -1,9 +1,10 @@
 package main
 
 import (
+	"./go-gitter"
 	"fmt"
+
 	"github.com/jinzhu/configor"
-	/*"github.com/sromku/go-gitter"*/
 	"github.com/thoj/go-ircevent"
 )
 
@@ -27,6 +28,20 @@ func main() {
 		return
 	}
 
+	api := gitter.New(conf.Gitter.Apikey)
+	api.SetDebug(true, nil)
+	user, err := api.GetUser()
+	if err != nil {
+		fmt.Printf("GetUser error: %v\n", err)
+		return
+	}
+	room, err := api.JoinRoom(conf.Gitter.Room)
+	if err != nil {
+		fmt.Printf("JoinRoom error: %v\n", err)
+		return
+	}
+	fmt.Printf("Joined room with ID: %v\n", room.ID)
+
 	ircCon := irc.IRC(conf.IRC.Nick, conf.IRC.Nick)
 	if err := ircCon.Connect(conf.IRC.Server); err != nil {
 		fmt.Printf("Failed to connect to %v: %v...\n", conf.IRC.Server, err)
@@ -41,7 +56,24 @@ func main() {
 	ircCon.AddCallback("PRIVMSG", func(e *irc.Event) {
 		gitterMsg := fmt.Sprintf("<%v> %v", e.Nick, e.Message())
 		fmt.Printf("[IRC] %v\n", gitterMsg)
-		ircCon.Privmsg(conf.IRC.Channel, gitterMsg)
+		api.SendMessage(room.ID, gitterMsg)
 	})
-	ircCon.Loop()
+	go ircCon.Loop()
+
+	stream := api.Stream(room.ID)
+	go api.Listen(stream)
+
+	for {
+		event := <-stream.Event
+		switch ev := event.Data.(type) {
+		case *gitter.MessageReceived:
+			if ev.Message.From.Username != user.Username {
+				ircMsg := fmt.Sprintf("<%v> %v", ev.Message.From.Username, ev.Message.Text)
+				fmt.Printf("[Gitter] %v\n", ircMsg)
+				ircCon.Privmsg(conf.IRC.Channel, ircMsg)
+			}
+		case *gitter.GitterConnectionClosed:
+			fmt.Printf("[Gitter] Connection closed...\n")
+		}
+	}
 }
