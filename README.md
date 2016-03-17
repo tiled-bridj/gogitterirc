@@ -1,6 +1,8 @@
 # gogitterirc
 
-[![Gitter](https://badges.gitter.im/mrexodia/gogitterirc.svg)](https://gitter.im/mrexodia/gogitterirc?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [#gogitterirc](https://webchat.freenode.net/?channels=gogitterirc) on Freenode
+[![Gitter](https://badges.gitter.im/mrexodia/gogitterirc.svg)](https://gitter.im/mrexodia/gogitterirc?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
+[#gogitterirc](https://webchat.freenode.net/?channels=gogitterirc) on Freenode
 
 This is a simple Gitter/IRC syncronization bot witten in Go for a low memory footprint.
 
