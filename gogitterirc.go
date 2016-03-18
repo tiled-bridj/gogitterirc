@@ -73,6 +73,52 @@ func goGitterIrc(conf Config) {
 func gitterTest(conf Config) {
 	api := gitter.New(conf.Gitter.Token)
 	api.SetDebug(true, nil)
+
+	user, err := api.GetUser()
+	if err != nil {
+		fmt.Printf("GetUser error: %v\n", err)
+		return
+	}
+	fmt.Printf("[Gitter] Logged in as %v (%v)!\n", user.Username, user.ID)
+
+	room, err := api.JoinRoom(conf.Gitter.Room)
+	if err != nil {
+		fmt.Printf("JoinRoom error: %v\n", err)
+	}
+	fmt.Printf("[Gitter] Joined room %v (%v)!\n", room.Name, room.ID)
+
+	/*faye := api.Faye(room.ID)
+	go faye.Listen()
+
+	for {
+		event := <-faye.Event
+		switch ev := event.Data.(type) {
+		case *gitter.MessageReceived:
+			if ev.Message.From.Username != user.Username {
+				ircMsg := fmt.Sprintf("<%v> %v", ev.Message.From.Username, ev.Message.Text)
+				fmt.Printf("[Gitter] %v\n", ircMsg)
+			}
+		case *gitter.GitterConnectionClosed:
+			fmt.Printf("[Gitter] Connection closed...\n")
+		}
+	}*/
+
+	stream := api.Stream(room.ID)
+	defer stream.Close()
+	go api.Listen(stream)
+
+	for {
+		event := <-stream.Event
+		switch ev := event.Data.(type) {
+		case *gitter.MessageReceived:
+			if ev.Message.From.ID != user.ID {
+				ircMsg := fmt.Sprintf("<%v> %v", ev.Message.From.Username, ev.Message.Text)
+				fmt.Printf("[Gitter] %v\n", ircMsg)
+			}
+		case *gitter.GitterConnectionClosed:
+			fmt.Printf("[Gitter] Connection closed...\n")
+		}
+	}
 }
 
 func main() {
