@@ -50,16 +50,16 @@ func goGitterIrcTelegram(conf Config) {
 	//telegram setup
 	bot, err := tgbotapi.NewBotAPI(conf.Telegram.Token)
 	if err != nil {
-		fmt.Printf("Error in NewBotAPI: %v...\n", err)
+		fmt.Printf("[Telegram] Error in NewBotAPI: %v...\n", err)
 		return
 	}
-	fmt.Printf("Authorized on account %s\n", bot.Self.UserName)
+	fmt.Printf("[Telegram] Authorized on account %s\n", bot.Self.UserName)
 
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
 	updates, err := bot.GetUpdatesChan(u)
 	if err != nil {
-		fmt.Printf("Error in GetUpdatesChan: %v...\n", err)
+		fmt.Printf("[Telegram] Error in GetUpdatesChan: %v...\n", err)
 		return
 	}
 
@@ -69,13 +69,14 @@ func goGitterIrcTelegram(conf Config) {
 	//irc setup
 	ircCon := irc.IRC(conf.IRC.Nick, conf.IRC.Nick)
 	if err := ircCon.Connect(conf.IRC.Server); err != nil {
-		fmt.Printf("Failed to connect to %v: %v...\n", conf.IRC.Server, err)
+		fmt.Printf("[IRC] Failed to connect to %v: %v...\n", conf.IRC.Server, err)
 		return
 	}
 	ircCon.AddCallback("001", func(e *irc.Event) {
 		ircCon.Join(conf.IRC.Channel)
 	})
 	ircCon.AddCallback("JOIN", func(e *irc.Event) {
+		fmt.Printf("[IRC] Joined channel %v\n", conf.IRC.Channel)
 		ircCon.Privmsg(conf.IRC.Channel, "Hello, I'll be syncronizing between IRC and Telegram/Gitter today!")
 	})
 	ircCon.AddCallback("PRIVMSG", func(e *irc.Event) {
@@ -83,61 +84,63 @@ func goGitterIrcTelegram(conf Config) {
 		fmt.Printf("[IRC] %v\n", gitterMsg)
 		api.SendMessage(room.ID, gitterMsg)
 		if groupId != 0 {
-			msg := tgbotapi.NewMessage(groupId, gitterMsg)
-			bot.Send(msg)
+			bot.Send(tgbotapi.NewMessage(groupId, gitterMsg))
 		}
 	})
 
-	//irc run
+	//irc loop
 	go ircCon.Loop()
 
-	//telegram run
+	//gitter loop
+	faye := api.Faye(room.ID)
+	go faye.Listen()
+
 	go func() {
-		for update := range updates {
-			message := update.Message
-			chat := message.Chat
-			if (chat.IsGroup() || chat.IsSuperGroup()) && stringInSlice(message.From.UserName, strings.Split(conf.Telegram.Admins, " ")) && message.Text == "/startsync" {
-				groupId = chat.ID
-			} else if len(message.From.UserName) > 0 && len(message.Text) > 0 {
-				name := message.From.UserName
-				if len(name) == 0 {
-					name = message.From.FirstName
-				}
-				telegramMsg := fmt.Sprintf("<%s> %s", name, message.Text)
-				fmt.Printf("[Telegram] %s\n", telegramMsg)
-				if groupId != 0 {
-					if groupId != chat.ID { //forward message to group
-						msg := tgbotapi.NewMessage(groupId, telegramMsg)
-						bot.Send(msg)
+		for {
+			event := <-faye.Event
+			switch ev := event.Data.(type) {
+			case *gitter.MessageReceived:
+				if len(ev.Message.From.Username) > 0 && ev.Message.From.Username != user.Username {
+					ircMsg := fmt.Sprintf("<%v> %v", ev.Message.From.Username, ev.Message.Text)
+					fmt.Printf("[Gitter] %v\n", ircMsg)
+					ircCon.Privmsg(conf.IRC.Channel, ircMsg)
+					if groupId != 0 {
+						bot.Send(tgbotapi.NewMessage(groupId, ircMsg))
 					}
-					ircCon.Privmsg(conf.IRC.Channel, telegramMsg)
-					api.SendMessage(room.ID, telegramMsg)
-				} else {
-					fmt.Println("[Telegam] Use /startsync to start the bot...")
 				}
+			case *gitter.GitterConnectionClosed:
+				fmt.Printf("[Gitter] Connection closed...\n")
 			}
 		}
 	}()
 
-	//gitter run
-	faye := api.Faye(room.ID)
-	go faye.Listen()
-
-	for {
-		event := <-faye.Event
-		switch ev := event.Data.(type) {
-		case *gitter.MessageReceived:
-			if len(ev.Message.From.Username) > 0 && ev.Message.From.Username != user.Username {
-				ircMsg := fmt.Sprintf("<%v> %v", ev.Message.From.Username, ev.Message.Text)
-				fmt.Printf("[Gitter] %v\n", ircMsg)
-				ircCon.Privmsg(conf.IRC.Channel, ircMsg)
-				if groupId != 0 {
-					msg := tgbotapi.NewMessage(groupId, ircMsg)
-					bot.Send(msg)
-				}
+	//telegram loop
+	for update := range updates {
+		message := update.Message
+		chat := message.Chat
+		name := message.From.UserName
+		if len(name) == 0 {
+			name = message.From.FirstName
+		}
+		telegramMsg := fmt.Sprintf("<%s> %s", name, message.Text)
+		fmt.Printf("[Telegram] %s\n", telegramMsg)
+		if stringInSlice(message.From.UserName, strings.Split(conf.Telegram.Admins, " ")) && strings.HasPrefix(message.Text, "/") {
+			if message.Text == "/startsync" && (chat.IsGroup() || chat.IsSuperGroup()) {
+				groupId = chat.ID
+				bot.Send(tgbotapi.NewMessage(groupId, "Hello, I'll be syncronizing between Telegram and IRC/Gitter today!"))
+			} else if message.Text == "/status" {
+				bot.Send(tgbotapi.NewMessage(int64(message.From.ID), fmt.Sprintf("Hey! Telegram.groupId: %v, IRC.Connected: %v", groupId, ircCon.Connected())))
 			}
-		case *gitter.GitterConnectionClosed:
-			fmt.Printf("[Gitter] Connection closed...\n")
+		} else if len(message.From.UserName) > 0 && len(message.Text) > 0 {
+			if groupId != 0 {
+				if groupId != chat.ID { //forward message to group
+					bot.Send(tgbotapi.NewMessage(groupId, telegramMsg))
+				}
+				ircCon.Privmsg(conf.IRC.Channel, telegramMsg)
+				api.SendMessage(room.ID, telegramMsg)
+			} else {
+				fmt.Println("[Telegam] Use /startsync to start the bot...")
+			}
 		}
 	}
 }
