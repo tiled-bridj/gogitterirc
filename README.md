@@ -4,7 +4,7 @@
 
 [#gogitterirc](https://webchat.freenode.net/?channels=gogitterirc) on Freenode
 
-This is a simple Gitter/IRC syncronization bot witten in Go for a low memory footprint.
+This is a simple Gitter/IRC/Telegram syncronization bot witten in Go for a low memory footprint.
 
 **NOTICE: It is currently in development and not considered stable!**
 
@@ -20,14 +20,19 @@ The [gitter-irc-bot](https://github.com/finnp/gitter-irc-bot) project works grea
 ```
 {
     "IRC": {
-        "Server": "irc.freenode.net:6667",
         "Nick": "nickname",
         "Channel": "#channel"
     },
     "Gitter": {
         "Token": "0123456789abcdef0123456789abcdef01234567",
         "Room": "team/room"
+    },
+    "Telegram": {
+        "Token": "012345678:abcdefghijklmn024728734hskjdnchfdb4",
+        "Admins": "admin1 admin2 admin3"
     }
 }
 ```
 4. Build/Run `gogitterirc` and have fun!
+
+To make the Telegram bot sync run the /startsync command as admin in the group you want to sync to/from.

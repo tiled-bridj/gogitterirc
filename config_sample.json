@@ -6,5 +6,9 @@
     "Gitter": {
         "Token": "0123456789abcdef0123456789abcdef01234567",
         "Room": "team/room"
+    },
+    "Telegram": {
+        "Token": "012345678:abcdefghijklmn024728734hskjdnchfdb4",
+        "Admins": "admin1 admin2 admin3"
     }
 }
