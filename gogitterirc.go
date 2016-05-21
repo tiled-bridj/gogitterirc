@@ -78,6 +78,7 @@ func goGitterIrcTelegram(conf Config) {
 	ircCon.AddCallback("JOIN", func(e *irc.Event) {
 		fmt.Printf("[IRC] Joined channel %v\n", conf.IRC.Channel)
 		ircCon.Privmsg(conf.IRC.Channel, "Hello, I'll be syncronizing between IRC and Telegram/Gitter today!")
+		ircCon.ClearCallback("JOIN")
 	})
 	ircCon.AddCallback("PRIVMSG", func(e *irc.Event) {
 		gitterMsg := fmt.Sprintf("<%v> %v", e.Nick, e.Message())
