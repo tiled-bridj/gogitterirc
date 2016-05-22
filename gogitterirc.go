@@ -93,12 +93,13 @@ func goGitterIrcTelegram(conf Config) {
 	go ircCon.Loop()
 
 	//gitter loop
-	faye := api.Faye(room.ID)
-	go faye.Listen()
+	stream := api.Stream(room.ID)
+	defer stream.Close()
+	go api.Listen(stream)
 
 	go func() {
 		for {
-			event := <-faye.Event
+			event := <-stream.Event
 			switch ev := event.Data.(type) {
 			case *gitter.MessageReceived:
 				if len(ev.Message.From.Username) > 0 && ev.Message.From.Username != user.Username {
