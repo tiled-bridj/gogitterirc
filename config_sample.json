@@ -4,8 +4,9 @@
         "Channel": "#channel"
     },
     "Gitter": {
-        "Token": "0123456789abcdef0123456789abcdef01234567",
-        "Room": "team/room"
+        "Pass": "0123456789abcdef0123456789abcdef01234567",
+        "Nick": "nickname",
+        "Channel": "#team/room"
     },
     "Telegram": {
         "Token": "012345678:abcdefghijklmn024728734hskjdnchfdb4",

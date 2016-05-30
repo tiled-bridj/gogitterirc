@@ -1,16 +1,12 @@
 # gogitterirc
 
-[![Gitter](https://badges.gitter.im/mrexodia/gogitterirc.svg)](https://gitter.im/mrexodia/gogitterirc?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-
-[#gogitterirc](https://webchat.freenode.net/?channels=gogitterirc) on Freenode
-
 This is a simple Gitter/IRC/Telegram syncronization bot witten in Go for a low memory footprint.
 
-**NOTICE: It is currently in development and not considered stable!**
+**NOTICE: It is currently in development, but actively used and maintained!**
 
 ## Why?
 
-The [gitter-irc-bot](https://github.com/finnp/gitter-irc-bot) project works great, but the overhead of Node.js is an annoyance so I decided to write a clone in Go (which compiles to native code).
+The [gitter-irc-bot](https://github.com/finnp/gitter-irc-bot) project works great, but the overhead of Node.js is an annoyance so I decided to write a clone in Go (which compiles to native code). Also the Gitter stream API is very unstable so this bot uses the [Gitter IRC bridge](http://irc.gitter.im).
 
 ## Installation
 
@@ -24,8 +20,9 @@ The [gitter-irc-bot](https://github.com/finnp/gitter-irc-bot) project works grea
         "Channel": "#channel"
     },
     "Gitter": {
-        "Token": "0123456789abcdef0123456789abcdef01234567",
-        "Room": "team/room"
+        "Pass": "0123456789abcdef0123456789abcdef01234567",
+        "Nick": "nickname",
+        "Channel": "#team/room"
     },
     "Telegram": {
         "Token": "012345678:abcdefghijklmn024728734hskjdnchfdb4",
