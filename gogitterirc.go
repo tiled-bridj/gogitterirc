@@ -140,7 +140,7 @@ func goGitterIrcTelegram(conf Config) {
 				groupId = chat.ID
 				bot.Send(tgbotapi.NewMessage(groupId, "Hello, I'll be syncronizing between Telegram and IRC/Gitter today!"))
 			} else if message.Text == "/status" {
-				bot.Send(tgbotapi.NewMessage(int64(message.From.ID), fmt.Sprintf("Hey! Telegram.groupId: %v, IRC.Connected: %v", groupId, ircCon.Connected())))
+				bot.Send(tgbotapi.NewMessage(int64(message.From.ID), fmt.Sprintf("groupId: %v, IRC: %v, Gitter: %v", groupId, ircCon.Connected(), gitterCon.Connected())))
 			}
 		} else if len(telegramMsg) > 0 {
 			if groupId != 0 {
