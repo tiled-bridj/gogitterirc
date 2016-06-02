@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/go-telegram-bot-api/telegram-bot-api"
@@ -110,8 +111,18 @@ func goGitterIrcTelegram(conf Config) {
 		gitterCon.ClearCallback("JOIN")
 	})
 	gitterCon.AddCallback("PRIVMSG", func(e *irc.Event) {
-		//construct/log message
-		gitterMsg := fmt.Sprintf("<%v> %v", e.Nick, e.Message())
+		//construct message
+		var gitterMsg string
+		if e.Nick == "gitter" { //status messages
+			gitterMsg = e.Message()
+			match, _ := regexp.MatchString("\\[Github\\].+(commented|edited|labeled|updated)", gitterMsg)
+			if match {
+				return
+			}
+		} else { //normal messages
+			gitterMsg = fmt.Sprintf("<%v> %v", e.Nick, e.Message())
+		}
+		//log message
 		fmt.Printf("[Gitter] %v\n", gitterMsg)
 		//send to IRC
 		ircCon.Privmsg(conf.IRC.Channel, gitterMsg)
