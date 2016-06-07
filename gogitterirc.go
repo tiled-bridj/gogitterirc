@@ -115,7 +115,7 @@ func goGitterIrcTelegram(conf Config) {
 		var gitterMsg string
 		if e.Nick == "gitter" { //status messages
 			gitterMsg = e.Message()
-			match, _ := regexp.MatchString("\\[Github\\].+(commented|edited|labeled|updated|closed a Pull)", gitterMsg)
+			match, _ := regexp.MatchString("\\[Github\\].+(commented|edited|labeled|updated|closed a Pull|synchronize)", gitterMsg)
 			if match {
 				return
 			}
