@@ -137,7 +137,15 @@ func goGitterIrcTelegram(conf Config) {
 	for update := range updates {
 		//copy variables
 		message := update.Message
+		if message == nil {
+			fmt.Printf("[Telegram] message == nil\n%v\n", update)
+			continue
+		}
 		chat := message.Chat
+		if chat == nil {
+			fmt.Printf("[Telegram] chat == nil\n%v\n", update)
+			continue
+		}
 		name := message.From.UserName
 		if len(name) == 0 {
 			name = message.From.FirstName
