@@ -78,7 +78,6 @@ func goGitterIrcTelegram(conf Config) {
 	ircCon.AddCallback("JOIN", func(e *irc.Event) {
 		//IRC welcome message
 		fmt.Printf("[IRC] Joined channel %v\n", conf.IRC.Channel)
-		ircCon.Privmsg(conf.IRC.Channel, "Hello, I'll be syncronizing between IRC and Telegram/Gitter today!")
 		//ignore when other people join
 		ircCon.ClearCallback("JOIN")
 	})
@@ -106,7 +105,6 @@ func goGitterIrcTelegram(conf Config) {
 	gitterCon.AddCallback("JOIN", func(e *irc.Event) {
 		//Gitter welcome message
 		fmt.Printf("[Gitter] Joined channel %v\n", conf.Gitter.Channel)
-		gitterCon.Privmsg(conf.Gitter.Channel, "Hello, I'll be syncronizing between Gitter and Telegram/IRC today!")
 		//ignore when other people join
 		gitterCon.ClearCallback("JOIN")
 	})
@@ -115,7 +113,7 @@ func goGitterIrcTelegram(conf Config) {
 		var gitterMsg string
 		if e.Nick == "gitter" { //status messages
 			gitterMsg = e.Message()
-			match, _ := regexp.MatchString("\\[Github\\].+(commented|edited|labeled|updated|closed a Pull|synchronize)", gitterMsg)
+			match, _ := regexp.MatchString("\\[Github\\].+(commented|edited|labeled|updated|synchronize|pushed)", gitterMsg)
 			if match {
 				return
 			}
@@ -157,7 +155,6 @@ func goGitterIrcTelegram(conf Config) {
 		if stringInSlice(message.From.UserName, strings.Split(conf.Telegram.Admins, " ")) && strings.HasPrefix(message.Text, "/") {
 			if message.Text == "/startsync" && (chat.IsGroup() || chat.IsSuperGroup()) {
 				groupId = chat.ID
-				bot.Send(tgbotapi.NewMessage(groupId, "Hello, I'll be syncronizing between Telegram and IRC/Gitter today!"))
 			} else if message.Text == "/status" {
 				bot.Send(tgbotapi.NewMessage(int64(message.From.ID), fmt.Sprintf("groupId: %v, IRC: %v, Gitter: %v", groupId, ircCon.Connected(), gitterCon.Connected())))
 			}
