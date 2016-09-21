@@ -153,7 +153,7 @@ func goGitterIrcTelegram(conf Config) {
 		fmt.Printf("[Telegram] %s\n", telegramMsg)
 		//check for admin commands
 		if stringInSlice(message.From.UserName, strings.Split(conf.Telegram.Admins, " ")) && strings.HasPrefix(message.Text, "/") {
-			if message.Text == "/startsync" && (chat.IsGroup() || chat.IsSuperGroup()) {
+			if message.Text == "/start" && (chat.IsGroup() || chat.IsSuperGroup()) {
 				groupId = chat.ID
 			} else if message.Text == "/status" {
 				bot.Send(tgbotapi.NewMessage(int64(message.From.ID), fmt.Sprintf("groupId: %v, IRC: %v, Gitter: %v", groupId, ircCon.Connected(), gitterCon.Connected())))
@@ -169,7 +169,7 @@ func goGitterIrcTelegram(conf Config) {
 				//send to Gitter
 				gitterCon.Privmsg(conf.Gitter.Channel, telegramMsg)
 			} else {
-				fmt.Println("[Telegam] Use /startsync to start the bot...")
+				fmt.Println("[Telegam] Use /start to start the bot...")
 			}
 		}
 	}
