@@ -154,6 +154,9 @@ func goGitterIrcTelegram(conf Config) {
 		if len(name) == 0 {
 			name = message.From.FirstName
 		}
+		if len(message.Text) == 0 {
+			continue
+		}
 		//construct/log message
 		telegramMsg := fmt.Sprintf("<%s> %s", name, message.Text)
 		fmt.Printf("[Telegram] %s\n", telegramMsg)
