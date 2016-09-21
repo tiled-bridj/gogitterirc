@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/go-telegram-bot-api/telegram-bot-api"
@@ -25,8 +26,9 @@ type Config struct {
 		Channel string `required:"true"`
 	}
 	Telegram struct {
-		Token  string `required:"true"`
-		Admins string `required:"true"`
+		Token   string `required:"true"`
+		Admins  string `required:"true"`
+		GroupId string `default:"0"`
 	}
 }
 
@@ -64,8 +66,12 @@ func goGitterIrcTelegram(conf Config) {
 		fmt.Printf("[Telegram] Error in GetUpdatesChan: %v...\n", err)
 		return
 	}
-	var groupId int64
-	groupId = 0
+	groupId, err := strconv.ParseInt(conf.Telegram.GroupId, 10, 64)
+	if err != nil {
+		fmt.Printf("[Telegram] Error parsing GroupId: %v...\n", err)
+		groupId = 0
+	}
+	fmt.Printf("[Telegram] GroupId: %v\n", groupId)
 
 	//IRC loop
 	if err := ircCon.Connect(conf.IRC.Server); err != nil {
