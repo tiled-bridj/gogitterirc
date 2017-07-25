@@ -89,8 +89,8 @@ func goGitterIrcTelegram(conf Config) {
 	})
 	ircCon.AddCallback("PRIVMSG", func(e *irc.Event) {
 		// strip mIRC color codes
-                re := regexp.MustCompile("\x1f|\x02|\x03(?:\\d{1,2}(?:,\\d{1,2})?)?")
-                msg := re.ReplaceAllString(e.Message(), "")
+		re := regexp.MustCompile("\x1f|\x02|\x03(?:\\d{1,2}(?:,\\d{1,2})?)?")
+		msg := re.ReplaceAllString(e.Message(), "")
 		//construct/log message
 		ircMsg := fmt.Sprintf("<%v> %v", e.Nick, msg)
 		fmt.Printf("[IRC] %v\n", ircMsg)
@@ -136,7 +136,12 @@ func goGitterIrcTelegram(conf Config) {
 		ircCon.Privmsg(conf.IRC.Channel, gitterMsg)
 		//send to Telegram
 		if groupId != 0 {
-			bot.Send(tgbotapi.NewMessage(groupId, gitterMsg))
+			tgmsg := tgbotapi.NewMessage(groupId, gitterMsg)
+			if e.Nick == "gitter" { //status messages
+				tgmsg.DisableWebPagePreview = true
+				tgmsg.DisableNotification = true
+			}
+			bot.Send(tgmsg)
 		}
 	})
 	go gitterCon.Loop()
