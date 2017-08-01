@@ -1,5 +1,6 @@
 {
     "IRC": {
+        "Identify": "password",
         "Nick": "nickname",
         "Channel": "#channel"
     },

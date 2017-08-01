@@ -13,11 +13,12 @@ import (
 
 type Config struct {
 	IRC struct {
-		Server  string `default:"irc.freenode.net:6667"`
-		UseTLS  bool   `default:false`
-		Pass    string `default:""`
-		Nick    string `required:"true"`
-		Channel string `required:"true"`
+		Server   string `default:"irc.freenode.net:6667"`
+		UseTLS   bool   `default:false`
+		Pass     string `default:""`
+		Nick     string `required:"true"`
+		Channel  string `required:"true"`
+		Identify string `default:""`
 	}
 	Gitter struct {
 		Server  string `default:"irc.gitter.im:6697"`
@@ -79,6 +80,9 @@ func goGitterIrcTelegram(conf Config) {
 		return
 	}
 	ircCon.AddCallback("001", func(e *irc.Event) {
+		if len(conf.IRC.Identify) != 0 {
+			ircCon.Privmsg("NickServ", "identify "+conf.IRC.Identify)
+		}
 		ircCon.Join(conf.IRC.Channel)
 	})
 	ircCon.AddCallback("JOIN", func(e *irc.Event) {
