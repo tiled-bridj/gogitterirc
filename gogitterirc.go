@@ -42,6 +42,13 @@ func stringInSlice(a string, list []string) bool {
 	return false
 }
 
+func ircPrivMsg(irc *irc.Connection, target string, author string, message string) {
+	messages := strings.Split(strings.Replace(message, "\r", "", -1), "\n")
+	for _, x := range messages {
+		irc.Privmsg(target, fmt.Sprintf("<%v> %v", author, x))
+	}
+}
+
 func goGitterIrcTelegram(conf Config) {
 	//IRC init
 	ircCon := irc.IRC(conf.IRC.Nick, conf.IRC.Nick)
@@ -171,8 +178,7 @@ func goGitterIrcTelegram(conf Config) {
 			continue
 		}
 		//construct/log message
-		telegramMsg := fmt.Sprintf("<%s> %s", name, message.Text)
-		fmt.Printf("[Telegram] %s\n", telegramMsg)
+		fmt.Printf("[Telegram] <%v> %v\n", name, message.Text)
 		//check for admin commands
 		if stringInSlice(message.From.UserName, strings.Split(conf.Telegram.Admins, " ")) && strings.HasPrefix(message.Text, "/") {
 			if message.Text == "/start" && (chat.IsGroup() || chat.IsSuperGroup()) {
@@ -180,19 +186,17 @@ func goGitterIrcTelegram(conf Config) {
 			} else if message.Text == "/status" {
 				bot.Send(tgbotapi.NewMessage(int64(message.From.ID), fmt.Sprintf("groupId: %v, IRC: %v, Gitter: %v", groupId, ircCon.Connected(), gitterCon.Connected())))
 			}
-		} else if len(telegramMsg) > 0 {
-			if groupId != 0 {
-				//forward message to group
-				if groupId != chat.ID {
-					bot.Send(tgbotapi.NewMessage(groupId, telegramMsg))
-				}
-				//send to IRC
-				ircCon.Privmsg(conf.IRC.Channel, telegramMsg)
-				//send to Gitter
-				gitterCon.Privmsg(conf.Gitter.Channel, telegramMsg)
-			} else {
-				fmt.Println("[Telegam] Use /start to start the bot...")
+		} else if groupId != 0 {
+			//forward message to group
+			if groupId != chat.ID {
+				bot.Send(tgbotapi.NewMessage(groupId, fmt.Sprintf("<%v> %v", name, message.Text)))
 			}
+			//send to IRC
+			ircPrivMsg(ircCon, conf.IRC.Channel, name, message.Text)
+			//send to Gitter
+			ircPrivMsg(gitterCon, conf.Gitter.Channel, name, message.Text)
+		} else {
+			fmt.Println("[Telegam] Use /start to start the bot...")
 		}
 	}
 }
