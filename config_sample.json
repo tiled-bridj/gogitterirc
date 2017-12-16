@@ -12,5 +12,12 @@
     "Telegram": {
         "Token": "012345678:abcdefghijklmn024728734hskjdnchfdb4",
         "Admins": "admin1 admin2 admin3"
+    },
+    "Slack": {
+        "Server": "workspace.irc.slack.com:6667",
+        "User": "botuser",
+        "Pass": "botuser.XXXXXXXXXXXXXXXXXXXX",
+        "Nick": "botuser",
+        "Channel": "#general"
     }
 }
