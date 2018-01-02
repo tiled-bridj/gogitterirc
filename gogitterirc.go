@@ -56,6 +56,16 @@ func ircPrivMsg(irc *irc.Connection, target string, author string, message strin
 	}
 }
 
+func gitterEscape(msg string) string {
+	// [![asm.png](https://files.gitter.im/x64dbg/x64dbg/0I1c/thumb/asm.png)](https://files.gitter.im/x64dbg/x64dbg/0I1c/asm.png)
+	r1 := regexp.MustCompile("^\\[!\\[[^\\]]+\\]\\(https?:\\/\\/files\\.gitter\\.im\\/[^\\/]+\\/[^\\/]+\\/[^\\/]+\\/thumb\\/[^\\)]+\\)\\]\\(([^\\)]+)\\)$")
+	msg = r1.ReplaceAllString(msg, "$1")
+	// [test.exe](https://files.gitter.im/x64dbg/x64dbg/ROVJ/test.exe)
+	r2 := regexp.MustCompile("\\[[^\\]]+\\]\\((https:\\/\\/files\\.gitter\\.im\\/[^\\/]+\\/[^\\/]+\\/[^\\/]+\\/[^\\)]+)\\)$")
+	msg = r2.ReplaceAllString(msg, "$1")
+	return msg
+}
+
 func goGitterIrcTelegram(conf Config) {
 	//IRC init
 	ircCon := irc.IRC(conf.IRC.Nick, conf.IRC.Nick)
@@ -153,7 +163,7 @@ func goGitterIrcTelegram(conf Config) {
 				return
 			}
 		} else { //normal messages
-			gitterMsg = fmt.Sprintf("<%v> %v", e.Nick, e.Message())
+			gitterMsg = fmt.Sprintf("<%v> %v", e.Nick, gitterEscape(e.Message()))
 		}
 		//log message
 		fmt.Printf("[Gitter] %v\n", gitterMsg)
