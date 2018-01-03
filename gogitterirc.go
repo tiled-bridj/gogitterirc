@@ -1,7 +1,11 @@
 package main
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
+	"net/http"
+	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
@@ -38,6 +42,59 @@ type Config struct {
 		Nick    string `required:"true"`
 		Channel string `required:"true"`
 	}
+}
+
+type ImgurResponse struct {
+	Data    ImageData `json:"data"`
+	Status  int       `json:"status"`
+	Success bool      `json:"success"`
+}
+
+type ImageData struct {
+	Account_id int    `json:"account_id"`
+	Animated   bool   `json:"animated"`
+	Bandwidth  int    `json:"bandwidth"`
+	DateTime   int    `json:"datetime"`
+	Deletehash string `json:"deletehash"`
+	Favorite   bool   `json:"favorite"`
+	Height     int    `json:"height"`
+	Id         string `json:"id"`
+	In_gallery bool   `json:"in_gallery"`
+	Is_ad      bool   `json:"is_ad"`
+	Link       string `json:"link"`
+	Name       string `json:"name"`
+	Size       int    `json:"size"`
+	Title      string `json:"title"`
+	Type       string `json:"type"`
+	Views      int    `json:"views"`
+	Width      int    `json:"width"`
+}
+
+func imgurUploadImageByURL(clientID string, imageURL string) (string, error) {
+	req, err := http.NewRequest("POST", "https://api.imgur.com/3/image", strings.NewReader(url.Values{"image": {imageURL}}.Encode()))
+	if err != nil {
+		return "", err
+	}
+
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Add("Authorization", "Client-ID "+clientID)
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer res.Body.Close()
+
+	var imgurResponse ImgurResponse
+	err = json.NewDecoder(res.Body).Decode(&imgurResponse)
+	if err != nil {
+		return "", err
+	}
+	if !imgurResponse.Success {
+		return "", errors.New("imgur API returned negative response")
+	}
+	fmt.Println("Image Link: " + imgurResponse.Data.Link)
+	fmt.Println("Deletion Link: http://imgur.com/delete/" + imgurResponse.Data.Deletehash)
+	return imgurResponse.Data.Link, nil
 }
 
 func stringInSlice(a string, list []string) bool {
@@ -231,6 +288,18 @@ func goGitterIrcTelegram(conf Config) {
 		name := message.From.UserName
 		if len(name) == 0 {
 			name = message.From.FirstName
+		}
+		//TODO: something with attached photos/gifs
+		if message.Photo != nil {
+			photos := *message.Photo
+			b, _ := json.Marshal(message)
+			fmt.Println(string(b))
+			for _, photo := range photos {
+				url, err := bot.GetFileDirectURL(photo.FileID)
+				if err != nil {
+					fmt.Printf("Photo URL: %v\n", url)
+				}
+			}
 		}
 		if len(message.Text) == 0 {
 			continue
