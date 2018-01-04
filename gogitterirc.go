@@ -31,9 +31,10 @@ type Config struct {
 		Channel string `required:"true"`
 	}
 	Telegram struct {
-		Token   string `required:"true"`
-		Admins  string `required:"true"`
-		GroupId string `default:"0"`
+		Token         string `required:"true"`
+		Admins        string `required:"true"`
+		GroupId       string `default:"0"`
+		ImgurClientId string `default:""`
 	}
 	Slack struct {
 		Server  string `required:"true"`
@@ -289,15 +290,22 @@ func goGitterIrcTelegram(conf Config) {
 		if len(name) == 0 {
 			name = message.From.FirstName
 		}
-		//TODO: something with attached photos/gifs
-		if message.Photo != nil {
-			photos := *message.Photo
-			b, _ := json.Marshal(message)
-			fmt.Println(string(b))
-			for _, photo := range photos {
-				url, err := bot.GetFileDirectURL(photo.FileID)
+		//TODO: use goroutines if it turns out people are sending a lot of photos
+		if len(conf.Telegram.ImgurClientId) > 0 && message.Photo != nil && len(*message.Photo) > 0 {
+			photo := (*message.Photo)[len(*message.Photo)-1]
+			url, err := bot.GetFileDirectURL(photo.FileID)
+			if err != nil {
+				fmt.Printf("GetFileDirectURL error: %v\n", err)
+			} else {
+				url, err = imgurUploadImageByURL(conf.Telegram.ImgurClientId, url)
 				if err != nil {
-					fmt.Printf("Photo URL: %v\n", url)
+					fmt.Printf("imgurUploadImageByURL error: %v\n", err)
+				} else {
+					if len(message.Caption) > 0 {
+						message.Text = fmt.Sprintf("%v %v", message.Caption, url)
+					} else {
+						message.Text = url
+					}
 				}
 			}
 		}
