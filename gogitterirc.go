@@ -36,13 +36,6 @@ type Config struct {
 		GroupId       string `default:"0"`
 		ImgurClientId string `default:""`
 	}
-	Slack struct {
-		Server  string `required:"true"`
-		User    string `required:"true"`
-		Pass    string `required:"true"`
-		Nick    string `required:"true"`
-		Channel string `required:"true"`
-	}
 }
 
 type ImgurResponse struct {
@@ -135,11 +128,6 @@ func goGitterIrcTelegram(conf Config) {
 	gitterCon.UseTLS = true
 	gitterCon.Password = conf.Gitter.Pass
 
-	//Slack init
-	slackCon := irc.IRC(conf.Slack.Nick, conf.Slack.User)
-	slackCon.UseTLS = true
-	slackCon.Password = conf.Slack.Pass
-
 	//Telegram init
 	bot, err := tgbotapi.NewBotAPI(conf.Telegram.Token)
 	if err != nil {
@@ -191,8 +179,6 @@ func goGitterIrcTelegram(conf Config) {
 		}
 		//send to Gitter
 		gitterCon.Privmsg(conf.Gitter.Channel, ircMsg)
-		//send to Slack
-		slackCon.Privmsg(conf.Slack.Channel, ircMsg)
 	})
 	go ircCon.Loop()
 
@@ -236,42 +222,8 @@ func goGitterIrcTelegram(conf Config) {
 		}
 		//send to IRC
 		ircCon.Privmsg(conf.IRC.Channel, gitterMsg)
-		//send to Slack
-		slackCon.Privmsg(conf.Slack.Channel, gitterMsg)
 	})
 	go gitterCon.Loop()
-
-	//Slack loop
-	if err := slackCon.Connect(conf.Slack.Server); err != nil {
-		fmt.Printf("[Slack] Failed to connect to %v: %v...\n", conf.Slack.Server, err)
-		return
-	}
-	slackCon.AddCallback("001", func(e *irc.Event) {
-		slackCon.Join(conf.Slack.Channel)
-	})
-	slackCon.AddCallback("JOIN", func(e *irc.Event) {
-		//IRC welcome message
-		fmt.Printf("[Slack] Joined channel %v\n", conf.Slack.Channel)
-		//ignore when other people join
-		slackCon.ClearCallback("JOIN")
-	})
-	slackCon.AddCallback("PRIVMSG", func(e *irc.Event) {
-		// strip mIRC color codes
-		re := regexp.MustCompile("\x1f|\x02|\x03(?:\\d{1,2}(?:,\\d{1,2})?)?")
-		msg := re.ReplaceAllString(e.Message(), "")
-		//construct/log message
-		slackMsg := fmt.Sprintf("<%v> %v", e.Nick, msg)
-		fmt.Printf("[Slack] %v\n", slackMsg)
-		//send to Telegram
-		if groupId != 0 {
-			bot.Send(tgbotapi.NewMessage(groupId, slackMsg))
-		}
-		//send to IRC
-		ircCon.Privmsg(conf.IRC.Channel, slackMsg)
-		//send to Gitter
-		gitterCon.Privmsg(conf.Gitter.Channel, slackMsg)
-	})
-	go slackCon.Loop()
 
 	//Telegram loop
 	for update := range updates {
@@ -330,8 +282,6 @@ func goGitterIrcTelegram(conf Config) {
 			ircPrivMsg(ircCon, conf.IRC.Channel, name, message.Text)
 			//send to Gitter
 			ircPrivMsg(gitterCon, conf.Gitter.Channel, name, message.Text)
-			//send to Slack
-			ircPrivMsg(slackCon, conf.Slack.Channel, name, message.Text)
 		} else {
 			fmt.Println("[Telegam] Use /start to start the bot...")
 		}
