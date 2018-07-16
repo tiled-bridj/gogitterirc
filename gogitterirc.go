@@ -147,7 +147,7 @@ func goGitterIrc(conf Config) {
 }
 
 func main() {
-	fmt.Println("Gitter/IRC Sync Bot, written in Go by mrexodia")
+	fmt.Println("Gitter/IRC Proxy Bot")
 	var conf Config
 	if err := configor.Load(&conf, "config.json"); err != nil {
 		fmt.Printf("Error loading config: %v...\n", err)
