@@ -1,4 +1,6 @@
 {
+    "EnableGitter": true,
+    "EnableDiscourse": false,
     "IRC": {
         "Identify": "password",
         "Nick": "nickname",

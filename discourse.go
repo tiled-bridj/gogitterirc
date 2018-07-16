@@ -1,7 +1,6 @@
 package main
 
 import (
-	"os"
 	"fmt"
 	"strings"
 	"net/http"
@@ -46,13 +45,16 @@ func (dc DiscourseClient) FetchTopics(dateThreshold string) ([]Topic, error) {
                 return nil, err
         }
 
-	fmt.Printf("newtopics=%#v\n", newTopicsQ) // debug
+	//fmt.Printf("newtopics=%#v\n", newTopicsQ) // debug
 
 	// No new topics
 	if newTopicsQ == nil {
 		return nil, nil
 	}
 	newTopics := newTopicsQ.([]interface {})
+	if len(newTopics) <= 0 {
+		return nil, nil
+	}
 
 	res := make([]Topic, len(newTopics))
 	for it := 0 ; it < len(newTopics) ; it++ {
@@ -64,7 +66,7 @@ func (dc DiscourseClient) FetchTopics(dateThreshold string) ([]Topic, error) {
 
 	return res, nil
 }
-
+/*
 func main() {
 	if (len(os.Args)!= 3) {
 		os.Exit(1);
@@ -79,4 +81,4 @@ func main() {
 	}
 	fmt.Printf("%#v\n", topics)
 }
-
+*/

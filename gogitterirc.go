@@ -3,12 +3,15 @@ package main
 import (
 	"fmt"
 	"regexp"
+	"time"
 
 	"github.com/jinzhu/configor"
 	"github.com/thoj/go-ircevent"
 )
 
 type Config struct {
+	EnableGitter    bool
+	EnableDiscourse bool
 	IRC struct {
 		Server   string `default:"irc.freenode.net:6667"`
 		UseTLS   bool   `default:"false"`
@@ -22,6 +25,9 @@ type Config struct {
 		Pass    string `required:"true"`
 		Nick    string `required:"true"`
 		Channel string `required:"true"`
+	}
+	Discourse struct {
+		Server string `default:"https://try.discourse.org"`
 	}
 }
 
@@ -45,6 +51,68 @@ func goGitterIrc(conf Config) {
 	gitterCon := irc.IRC(conf.Gitter.Nick, conf.Gitter.Nick)
 	gitterCon.UseTLS = true
 	gitterCon.Password = conf.Gitter.Pass
+
+	// Discourse init
+	discourseCon := DiscourseClient{conf.Discourse.Server}
+
+	// Discourse loop
+	if conf.EnableDiscourse {
+		discourseLoop := func() {
+			lastdate := time.Now().UTC().Format(time.RFC3339)
+			for {
+				time.Sleep(time.Minute * 15)
+				topics, err := discourseCon.FetchTopics(lastdate)
+				if err != nil {
+					fmt.Printf("[Discourse] Error: %v\n", err)
+				}
+				if topics != nil {
+					lastdate = topics[0].created
+					for it := 0 ; it < len(topics) ; it++ {
+						gitterMsg := fmt.Sprintf("[Discourse] new Topic: %v - %v", topics[it].title, topics[it].url)
+						fmt.Println(gitterMsg)
+						ircCon.Privmsg(conf.IRC.Channel, gitterMsg)
+					}
+				}
+			}
+		}
+		go discourseLoop()
+	}
+
+	//Gitter loop
+	if conf.EnableGitter {
+		if err := gitterCon.Connect(conf.Gitter.Server); err != nil {
+			fmt.Printf("[Gitter] Failed to connect to %v: %v...\n", conf.Gitter.Server, err)
+			return
+		}
+		gitterCon.AddCallback("001", func(e *irc.Event) {
+			gitterCon.Join(conf.Gitter.Channel)
+		})
+		gitterCon.AddCallback("JOIN", func(e *irc.Event) {
+			//Gitter welcome message
+			fmt.Printf("[Gitter] Joined channel %v\n", conf.Gitter.Channel)
+			//ignore when other people join
+			gitterCon.ClearCallback("JOIN")
+		})
+		gitterCon.AddCallback("PRIVMSG", func(e *irc.Event) {
+			//construct message
+			var gitterMsg string
+			if e.Nick == "gitter" { //status messages
+				gitterMsg = e.Message()
+				match, _ := regexp.MatchString("\\[Github\\].+(opened|closed)", gitterMsg) //whitelist
+				if !match {
+					fmt.Printf("[Gitter Status] %v", gitterMsg)
+					return
+				}
+			} else { //normal messages
+				gitterMsg = fmt.Sprintf("<%v> %v", e.Nick, gitterEscape(e.Message()))
+			}
+			//log message
+			fmt.Printf("[Gitter] %v\n", gitterMsg)
+			//send to IRC
+			ircCon.Privmsg(conf.IRC.Channel, gitterMsg)
+		})
+		go gitterCon.Loop()
+	}
 
 	//IRC loop
 	if err := ircCon.Connect(conf.IRC.Server); err != nil {
@@ -71,44 +139,11 @@ func goGitterIrc(conf Config) {
 		ircMsg := fmt.Sprintf("`%v` %v", e.Nick, msg)
 		fmt.Printf("[IRC] %v\n", ircMsg)
 		//send to Gitter
-		gitterCon.Privmsg(conf.Gitter.Channel, ircMsg)
-	})
-	go ircCon.Loop()
-
-	//Gitter loop
-	if err := gitterCon.Connect(conf.Gitter.Server); err != nil {
-		fmt.Printf("[Gitter] Failed to connect to %v: %v...\n", conf.Gitter.Server, err)
-		return
-	}
-	gitterCon.AddCallback("001", func(e *irc.Event) {
-		gitterCon.Join(conf.Gitter.Channel)
-	})
-	gitterCon.AddCallback("JOIN", func(e *irc.Event) {
-		//Gitter welcome message
-		fmt.Printf("[Gitter] Joined channel %v\n", conf.Gitter.Channel)
-		//ignore when other people join
-		gitterCon.ClearCallback("JOIN")
-	})
-	gitterCon.AddCallback("PRIVMSG", func(e *irc.Event) {
-		//construct message
-		var gitterMsg string
-		if e.Nick == "gitter" { //status messages
-			gitterMsg = e.Message()
-			match, _ := regexp.MatchString("\\[Github\\].+(opened|closed)", gitterMsg) //whitelist
-			if !match {
-				fmt.Printf("[Gitter Status] %v", gitterMsg)
-				return
-			}
-		} else { //normal messages
-			gitterMsg = fmt.Sprintf("<%v> %v", e.Nick, gitterEscape(e.Message()))
+		if conf.EnableGitter {
+			gitterCon.Privmsg(conf.Gitter.Channel, ircMsg)
 		}
-		//log message
-		fmt.Printf("[Gitter] %v\n", gitterMsg)
-		//send to IRC
-		ircCon.Privmsg(conf.IRC.Channel, gitterMsg)
 	})
-	gitterCon.Loop()
-
+	ircCon.Loop()
 }
 
 func main() {
