@@ -122,6 +122,7 @@ func goGitterIrc(conf Config) {
 	ircCon.AddCallback("001", func(e *irc.Event) {
 		if len(conf.IRC.Identify) != 0 {
 			ircCon.Privmsg("NickServ", "identify "+conf.IRC.Identify)
+			time.Sleep(15 * time.Second)
 		}
 		ircCon.Join(conf.IRC.Channel)
 	})
